@@ -1,4 +1,6 @@
-all: simplescan rfcomm-server rfcomm-client l2cap-server l2cap-client
+all: simplescan rfcomm-server rfcomm-client l2cap-server l2cap-client demo
+demo: demo.c
+	gcc -g -o demo demo.c -lbluetooth
 l2cap-server: l2cap-server.c
 	gcc -g -o l2cap-server l2cap-server.c -lbluetooth
 l2cap-client: l2cap-client.c
