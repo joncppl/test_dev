@@ -1,9 +1,13 @@
-all: simplescan rfcomm-server rfcomm-client
+all: simplescan rfcomm-server rfcomm-client l2cap-server l2cap-client
+l2cap-server: l2cap-server.c
+	gcc -g -o l2cap-server l2cap-server.c -lbluetooth
+l2cap-client: l2cap-client.c
+	gcc -g -o l2cap-client l2cap-client.c -lbluetooth
 simplescan: simplescan.c
-	gcc -o simplescan simplescan.c -lbluetooth
+	gcc -g -o simplescan simplescan.c -lbluetooth
 rfcomm-server: rfcomm-server.c
-	gcc -o rfcomm-server rfcomm-server.c -lbluetooth
+	gcc -g -o rfcomm-server rfcomm-server.c -lbluetooth
 rfcomm-client: rfcomm-client.c
-	gcc -o rfcomm-client rfcomm-client.c -lbluetooth
+	gcc -g -o rfcomm-client rfcomm-client.c -lbluetooth
 clean:
-	rm -rf simplescan rfcomm-server rfcomm-client
+	rm -rf simplescan rfcomm-server rfcomm-client l2cap-server l2cap-client

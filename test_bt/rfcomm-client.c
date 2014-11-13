@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 {
 	struct sockaddr_rc addr = {0};
 	int s, status;
-	char dest[18] = "00:0A:3A:57:53:B8";
+	char dest[18] = "DC:A9:71:0D:BF:64";
 
 	//allocate a socket
 	s = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
@@ -25,11 +25,16 @@ int main(int argc, char *argv[])
 	if (status == 0)
 	{
 		status = write(s, "hello!", 6);
+		printf("Sent %d bytes\n", status);	
 	}
-	
-	if (status < 0)
+	else
 	{
-		perror("failed.");
+		printf("Failed to connect\n");
+	}	
+
+	if (status != 6)
+	{
+		perror("fail");
 	}
 
 	close(s);
