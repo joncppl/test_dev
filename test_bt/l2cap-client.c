@@ -8,16 +8,7 @@ int main(int argc, char **argv)
 {
     struct sockaddr_l2 addr = { 0 };
     int s, status;
-    char *message = "hello!";
     char dest[18] = "DC:A9:71:0D:BF:64";
-
-    if(argc < 2)
-    {
-        fprintf(stderr, "usage: %s <bt_addr>\n", argv[0]);
-        exit(2);
-    }
-
-    strncpy(dest, argv[1], 18);
 
     // allocate a socket
     s = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
@@ -29,13 +20,19 @@ int main(int argc, char **argv)
 
     // connect to server
     status = connect(s, (struct sockaddr *)&addr, sizeof(addr));
+    while (1) 
+    {
+        // send a message
+        if( status == 0 ) {
+            status = send(s, "hello!", 6, 0);
+        }
 
-    // send a message
-    if( status == 0 ) {
-        status = write(s, "hello!", 6);
+        if( status < 0 ) perror("uh oh");
+        else puts("sent message");
+
+        sleep(1);
     }
 
-    if( status < 0 ) perror("uh oh");
 
     close(s);
 }
