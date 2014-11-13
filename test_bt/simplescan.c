@@ -19,8 +19,13 @@ int main(int argc, char *argv[])
 	char addr[19] = {0};
 	char name[248] = {0};
 
+	//Pass NULL to hci_get_route to get the first available bt adapter
 	dev_id = hci_get_route(NULL);
+
+	//open the adapter with given id
 	sock = hci_open_dev(dev_id);
+
+	//check that there is an adapter
 	if (dev_id < 0 || sock < 0)
 	{
 		perror("opening socket");
@@ -31,9 +36,13 @@ int main(int argc, char *argv[])
 
 	len = 8;
 	max_rsp = 256;
+
+	//IREQ_CACHE_FLUSH requires that the cache of previously deteced devices is flushed before the current inquiry.
 	flags = IREQ_CACHE_FLUSH;
 	ii = (inquiry_info *) malloc(max_rsp * sizeof(inquiry_info));
-
+	
+	//perform bt device discovery
+	//return -1 on error
 	num_rsp = hci_inquiry(dev_id, len, max_rsp, NULL, &ii, flags);
 	if (num_rsp < 0)
 	{
@@ -52,7 +61,7 @@ int main(int argc, char *argv[])
 			strcpy(name, "[unknown]");
 		}
 		
-		printf("\[%d\]%s\t%s\n", i, addr, name);
+		printf("[%d]\t%s\t%s\n", i, addr, name);
 	}
 
 
