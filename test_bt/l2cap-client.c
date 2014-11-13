@@ -20,11 +20,19 @@ int main(int argc, char **argv)
 
     // connect to server
     status = connect(s, (struct sockaddr *)&addr, sizeof(addr));
+    if (status != 0) {
+        perror("fail to connect");
+        exit(1);
+    }
+
+    char buf[56] = {0};
+    int i = 0;
     while (1) 
     {
         // send a message
         if( status == 0 ) {
-            status = send(s, "hello!", 6, 0);
+            sprintf(buf, "%d", i++);
+            status = send(s, buf, strlen(buf), 0);
         }
 
         if( status < 0 ) perror("uh oh");

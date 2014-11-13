@@ -10,7 +10,7 @@ int main(int argc, char **argv)
     int s, status, len=0;
     char dest[18] = "DC:A9:71:0D:BF:64";
     //char dest[18] = "00:0A:3A:57:53:B8";
-    char buf[256];
+    char buf[256] = "";
     // allocate a socket
     s = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
  
@@ -28,7 +28,7 @@ int main(int argc, char **argv)
         return -1;
     }
  
- 
+    sprintf(buf,"")
     do{
         len = read(s, buf, sizeof buf);
  

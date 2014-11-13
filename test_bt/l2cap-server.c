@@ -26,7 +26,7 @@ int main(int argc, char **argv)
     listen(s, 1);
 
     // accept one connection
-    client = accept4(s, (struct sockaddr *)&rem_addr, &opt, SOCK_NONBLOCK);
+    client = accept(s, (struct sockaddr *)&rem_addr, &opt);
 
     ba2str( &rem_addr.l2_bdaddr, buf );
     fprintf(stderr, "accepted connection from %s\n", buf);
@@ -35,14 +35,6 @@ int main(int argc, char **argv)
     while (1) 
     {
         memset(buf, 0, sizeof(buf));
-
-        while (1)
-        {
-            puts("Checking for data");
-            if (recv(client, buf, sizeof(buf), MSG_PEEK))
-                break;
-            usleep(5000);
-        }
 
         // read data from the client
         bytes_read = recv(client, buf, sizeof(buf), 0);
