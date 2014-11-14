@@ -8,8 +8,8 @@
 #include <bluetooth/hci_lib.h>
 
 int server();
-int client(struct sockaddr_l2);
-struct sockaddr_l2 scan(int);
+int client(const char *);
+const char * scan(int);
 
 
 int main(int argc, char *argv[])
@@ -45,9 +45,9 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-int client(struct sockaddr_l2 addr)
+int client(const char *dest)
 {
-    //struct sockaddr_l2 addr = { 0 };
+    struct sockaddr_l2 addr = { 0 };
     int s, status;
     //char dest[18] = {0};
 
@@ -57,7 +57,7 @@ int client(struct sockaddr_l2 addr)
     // set the connection parameters (who to connect to)
     addr.l2_family = AF_BLUETOOTH;
     addr.l2_psm = htobs(0x1001);
-    //str2ba( dest, &addr.l2_bdaddr );
+    str2ba( dest, &addr.l2_bdaddr );
 
     // connect to server
     while (1)
@@ -65,6 +65,8 @@ int client(struct sockaddr_l2 addr)
         status = connect(s, (struct sockaddr *)&addr, sizeof(addr));
         if (status != 0) {
             perror("fail to connect");
+            close(s);
+            s = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
             continue;
         }
 
@@ -149,14 +151,13 @@ int server()
     close(s);
 }
 
-struct sockaddr_l2 scan(int do_ask)
+const char *scan(int do_ask)
 {
-    struct sockaddr_l2 ret;
     inquiry_info *ii = NULL;
     int max_rsp, num_rsp;
     int dev_id, sock, len, flags;
     int i;
-    char addr[19] = {0};
+    static char addr[19] = {0};
     char name[248] = {0};
 
     //Pass NULL to hci_get_route to get the first available bt adapter
@@ -169,7 +170,7 @@ struct sockaddr_l2 scan(int do_ask)
     if (dev_id < 0 || sock < 0)
     {
         perror("opening socket");
-        return ret;
+        return NULL;
     }
 
     puts("Scanning for bluetooth devices...");
@@ -208,10 +209,10 @@ struct sockaddr_l2 scan(int do_ask)
     {
         puts("Enter the number of the device you wish to connect with");
         scanf("%d", &i);
-        memcpy(&ret.l2_bdaddr, &(ii+i)->bdaddr, 64);
+        ba2str(&(ii+i)->bdaddr, addr);
     }
 
     free(ii);
     close(sock);
-    return ret;
+    return addr;
 }
