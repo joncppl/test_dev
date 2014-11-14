@@ -12,4 +12,4 @@ rfcomm-server: rfcomm-server.c
 rfcomm-client: rfcomm-client.c
 	gcc -g -o rfcomm-client rfcomm-client.c -lbluetooth
 clean:
-	rm -rf simplescan rfcomm-server rfcomm-client l2cap-server l2cap-client
+	rm -rf simplescan rfcomm-server rfcomm-client l2cap-server l2cap-client demo

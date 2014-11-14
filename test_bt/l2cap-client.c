@@ -26,17 +26,14 @@ int main(int argc, char **argv)
     }
 
     char buf[56] = {0};
-    int i = 0;
+    int i = 0, error;
     while (1) 
     {
-        // send a message
-        if( status == 0 ) {
-            sprintf(buf, "%d", i++);
-            status = send(s, buf, strlen(buf), 0);
-        }
-
-        if( status < 0 ) perror("uh oh");
-        else puts("sent message");
+        sprintf(buf, "This is test number %d", i++);
+        error = send(s, buf, strlen(buf), 0);
+        
+        if( error < 0 ) perror("uh oh");
+        else printf("sent message %s\n", buf);
 
         sleep(1);
     }

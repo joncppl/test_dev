@@ -28,8 +28,7 @@ int main(int argc, char **argv)
         return -1;
     }
  
-    sprintf(buf,"")
-    do{
+        do{
         len = read(s, buf, sizeof buf);
  
      if( len>0 ) {

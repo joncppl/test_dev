@@ -7,6 +7,7 @@ port = 0x1001
 
 sock.connect((bd_addr, port))
 
-sock.send("hello!!")
+for x in range(0, 500):
+	sock.send(x)
 
 sock.close()
