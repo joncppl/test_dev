@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/l2cap.h>
+#include <bluetooth/rfcomm.h>
 
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
@@ -11,9 +12,20 @@ int server();
 int client(const char *);
 const char * scan(int);
 
+int use_rfcomm = 0;
+
 
 int main(int argc, char *argv[])
 {
+    if (argc > 2)
+    {
+        if (0 == strcmp(argv[2], "rfcomm"))
+        {
+            use_rfcomm = 1;
+            puts("Using rfcomm");
+        }
+    }
+
     if (argc > 1)
     {
         if (0 == strcmp(argv[1], "client"))
@@ -39,7 +51,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        puts("Usage: demo_bt [server|client|scan]");
+        puts("Usage: demo_bt <server|client|scan> [rfcomm]");
         return 1;
     }
     return 0;
@@ -47,17 +59,29 @@ int main(int argc, char *argv[])
 
 int client(const char *dest)
 {
-    struct sockaddr_l2 addr = { 0 };
+    struct sockaddr_l2 addr_l2 = {0};
+    struct sockaddr_rc addr_rc = {0};
     int s, status;
     //char dest[18] = {0};
 
     // allocate a socket
-    s = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
+    if (use_rfcomm)
+    {
+        s = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+    }
+    else
+    {
+        s = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
+    }
 
     // set the connection parameters (who to connect to)
-    addr.l2_family = AF_BLUETOOTH;
-    addr.l2_psm = htobs(0x1001);
-    str2ba( dest, &addr.l2_bdaddr );
+    addr_l2.l2_family = AF_BLUETOOTH;
+    addr_l2.l2_psm = htobs(0x1001);
+    str2ba( dest, &addr_l2.l2_bdaddr );
+
+    addr_rc.rc_family = AF_BLUETOOTH;
+    addr_rc.rc_channel = (uint8_t) 1;
+    str2ba(dest, &addr_rc.rc_bdaddr);
 
     int is_bad_send = 0;
     // connect to server
@@ -65,11 +89,26 @@ int client(const char *dest)
     int error;
     while (1)
     {
-        status = connect(s, (struct sockaddr *)&addr, sizeof(addr));
+        if (use_rfcomm)
+        {
+            status = connect(s, (struct sockaddr *)&addr_rc, sizeof(addr_rc));
+        }
+        else
+        {
+            status = connect(s, (struct sockaddr *)&addr_l2, sizeof(addr_l2));
+        }
+
         if (status != 0) {
             perror("fail to connect");
             close(s);
-            s = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
+            if (use_rfcomm)
+            {
+                s = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+            }
+            else
+            {
+                s = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
+            }    
             continue;
         }
 
@@ -112,21 +151,44 @@ int client(const char *dest)
 
 int server()
 {
-    struct sockaddr_l2 loc_addr = { 0 }, rem_addr = { 0 };
+    struct sockaddr_l2 loc_addr_l2 = { 0 }, rem_addr_l2 = { 0 };
+    struct sockaddr_rc loc_addr_rc = {0}, rem_addr_rc = {0};
     char buf[1024] = { 0 };
     int s, client, bytes_read;
-    socklen_t opt = sizeof(rem_addr);
+    socklen_t opt_l2 = sizeof(rem_addr_l2);
+    socklen_t opt_rc = sizeof(rem_addr_rc);
 
     // allocate socket
-    s = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
+    if (use_rfcomm)
+    {
+        s = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+    }   
+    else
+    { 
+        s = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
+    }
 
     // bind socket to port 0x1001 of the first available 
     // bluetooth adapter
-    loc_addr.l2_family = AF_BLUETOOTH;
-    loc_addr.l2_bdaddr = *BDADDR_ANY;
-    loc_addr.l2_psm = htobs(0x1001);
+    loc_addr_l2.l2_family = AF_BLUETOOTH;
+    loc_addr_l2.l2_bdaddr = *BDADDR_ANY;
+    loc_addr_l2.l2_psm = htobs(0x1001);
+    
 
-    bind(s, (struct sockaddr *)&loc_addr, sizeof(loc_addr));
+    loc_addr_rc.rc_family = AF_BLUETOOTH;
+    loc_addr_rc.rc_bdaddr = *BDADDR_ANY;
+    loc_addr_rc.rc_channel = (uint8_t) 1;
+    
+
+    if (use_rfcomm)
+    {
+        bind(s, (struct sockaddr *)&loc_addr_rc, sizeof(loc_addr_rc));
+    }
+    else 
+    {
+        bind(s, (struct sockaddr *)&loc_addr_l2, sizeof(loc_addr_l2));
+    }
+
 
     // put socket into listening mode
     listen(s, 1);
@@ -134,7 +196,14 @@ int server()
     // accept one connection
     while (1)
     {
-        client = accept(s, (struct sockaddr *)&rem_addr, &opt);
+        if (use_rfcomm)
+        {
+            client = accept(s, (struct sockaddr *)&rem_addr_rc, &opt_rc);
+        }
+        else
+        {
+            client = accept(s, (struct sockaddr *)&rem_addr_l2, &opt_l2);
+        }
 
         if (client < 0)
         {
@@ -142,7 +211,15 @@ int server()
             continue;
         }
 
-        ba2str( &rem_addr.l2_bdaddr, buf );
+        if (use_rfcomm)
+        {
+            ba2str(&rem_addr_rc.rc_bdaddr, buf);
+        }
+        else
+        {
+            ba2str( &rem_addr_l2.l2_bdaddr, buf );
+        }
+
         fprintf(stderr, "accepted connection from %s\n", buf);
 
      
