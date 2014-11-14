@@ -59,7 +59,10 @@ int client(const char *dest)
     addr.l2_psm = htobs(0x1001);
     str2ba( dest, &addr.l2_bdaddr );
 
+    int is_bad_send = 0;
     // connect to server
+    char buf[1024] = {0};
+    int error;
     while (1)
     {
         status = connect(s, (struct sockaddr *)&addr, sizeof(addr));
@@ -70,8 +73,21 @@ int client(const char *dest)
             continue;
         }
 
-        char buf[1024] = {0};
-        int i = 0, error;
+        if (is_bad_send)
+        {
+            error = send(s, buf, strlen(buf), 0);
+            
+            if( error < 0 )
+            {
+                continue;
+            }
+            else
+            {
+                is_bad_send = 0;
+            }
+        }
+
+        
         while (1) 
         {
             puts("Enter string to send:");
@@ -81,6 +97,7 @@ int client(const char *dest)
             if( error < 0 )
             {
                 perror("uh oh");
+                is_bad_send = 1;
                 break;
             }
             else
